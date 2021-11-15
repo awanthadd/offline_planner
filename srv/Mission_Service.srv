@@ -1,0 +1,4 @@
+Mission_struct mission
+---
+Path_Struct path
+Mission_struct new_mission

@@ -1,0 +1,10 @@
+Point_XYZ[] path_xyz
+float64[] path_heading
+float64[] path_velocity
+float64[] path_vvelocity
+float64[] path_bank
+float64[] path_climb
+float64[] path_curv
+float64[] path_times
+float64[] path_deriv
+float64[] path_roll_rate

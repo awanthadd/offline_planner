@@ -1,0 +1,3 @@
+<launch>
+<node pkg="offline_planner" type="service_server" name="mission_service_server_node" output="screen" />
+</launch>

@@ -1,0 +1,6 @@
+<launch>
+<node pkg="offline_planner" type="service_server" name="mission_service_server_node" output="screen" />
+<node pkg="offline_planner" type="service_client" name="mission_service_client_node" output="screen" />        
+<?ignore <node type="rviz" name="rviz" pkg="rviz" args="-d $(find offline_planner)/rviz/wp_view.rviz" /> ?>
+<node type="rviz" name="rviz" pkg="rviz" args="-d $(find offline_planner)/rviz/path_view.rviz" />
+</launch>

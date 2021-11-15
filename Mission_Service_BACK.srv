@@ -1,0 +1,8 @@
+uint8 wp_number
+uint8 wp_length  
+float64[] wp_data
+Mission_struct mission
+Mission_item_struct[] mission_items
+---
+Path_Struct path
+Mission_struct new_mission
