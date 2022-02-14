@@ -52,7 +52,7 @@ std::vector <double> path_heading;
 std::vector <double> path_velocity; // Horizontal_vel
 std::vector <double> path_vvelocity; // vertical velocity
 std::vector <double> path_bank;
-std::vector <double> path_climb; // use only for vertical movement
+std::vector <double> path_gamma; // use only for vertical movement
 std::vector <double> path_curv;
 std::vector <double> path_times;
 std::vector <double> path_deriv; // not used yet
@@ -65,12 +65,14 @@ struct RK4_struct
       std::vector <double> xy; std::vector <double> z; std::vector <double> t;
       std::vector <double> x; std::vector <double> y; double heading =0.0; std::vector <double> vv;
       std::vector <double> v; std::vector <double> vh; std::vector <double> gamma;  std::vector <double> vv_coeffs; // vertical velocity coeffs   
+      std::vector <double> gamma_coeffs; // for calculating gamma w.r.t time ...31/01/2022
     };
 
 struct linear_climb_struct
     {
       std::vector <double> xy; std::vector <double> z; std::vector <double> t;
       std::vector <double> x; std::vector <double> y;   double heading =0.0;    std::vector <double> vv_coeffs; 
+       std::vector <double> gamma_coeffs; // for calculating gamma w.r.t time ...31/01/2022
       double v=0.0; double vh=0.0; double vv=0.0; double gamma=0.0; double length=0.0;   double tot_t=0;
     };
 
@@ -177,6 +179,7 @@ struct straight_struct
       std::vector <std::vector <double> > t_coeffs;
       std::vector <std::vector <double> > vel_coeffs;
       std::vector <std::vector <double> > vvel_coeffs;
+      std::vector <std::vector <double> > gamma_coeffs;
      // std::vector <point_xyz> path_xyz; Don't need this
       };
 
@@ -241,9 +244,10 @@ struct route_struct {
   std::vector <std::vector <double> > t_coeffs;
   std::vector <std::vector <double> > vel_coeffs; // horizontal vel
   std::vector <std::vector <double> > vvel_coeffs; // vertical vel
+  std::vector <std::vector <double> > gamma_coeffs; // for climb angle coeffs 31/01/2022
   std::vector <std::vector <double> > curv_coeffs;
   std::vector <std::vector <double> > psi_coeffs;
-  std::vector <std::vector <double> > climb_ang_coeffs;
+  //std::vector <std::vector <double> > climb_ang_coeffs;
   
   double total_time=0;
   path_struct path;

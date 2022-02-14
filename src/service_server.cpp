@@ -113,13 +113,8 @@ bool straight_use_max_accel=true;  // use the maximum accelerator defined in heu
 // CALCULATE THE TURN SEGMENTS FIRST...
 std::cout<<"Calculating turns..."<<std::endl;
 for (int turn_i =0; turn_i <route.num_turns; turn_i++) {
-  turn_struct new_turn;
-  if (route.wpt_list.at(turn_i+1).fowp==true) {
-    new_turn=generate_fly_over_turn( route, turn_i, curvs); 
-  }
-  else {
-    new_turn=generate_fly_by_turn( route, turn_i, curvs); 
-  }
+  turn_struct new_turn;   
+ new_turn=generate_turn( route, turn_i, curvs,route.wpt_list.at(turn_i+1).fowp); 
 
   if (new_turn.empty==false) {
     route.turns.push_back(new_turn);
@@ -132,12 +127,13 @@ for (int turn_i =0; turn_i <route.num_turns; turn_i++) {
     std::cout<<"Fail to calculate the turn "<<turn_i<< ". Please redefine the turn parameters. Existing.."<< std::endl;
     break;
   }
+  std::cin.get();
 }
 
 ///////////////////////////////////////////////29/July/2021: THIS CODE SNIPPET IS JUST TO GENERATE THE WAYPOINT VECTOR FOR NEW PLAN FILE
 
 
-// 13/09/2021 FOR TESGING THE SHIFT OF GENERATED PLAN FILE. TOGGLE BETWEEN NEW AND ORIGINAL XYZ WAYPOINTS
+// 13/09/2021 FOR TESTING THE SHIFT OF GENERATED PLAN FILE. TOGGLE BETWEEN NEW AND ORIGINAL XYZ WAYPOINTS
 std::vector <point_xyzvdldrfo> new_plan_wps_XYZ= Generate_new_plan_wps_XYZ_from_turns(route.turns);
 std::cin.get();
 //std::vector <point_xyzvdldrfo> new_plan_wps_XYZ=XYZ_curr_wps;
@@ -189,9 +185,13 @@ std::cout<<"Route total time "<< route.total_time<<std::endl;
 
 std::cout<<"Calculating complete path of the route..."<<std::endl; 
 
+std::cin.get();
+
+
 calculate_complete_path(route);
 
 std::cout<<"Calculation is complete.."<<std::endl;
+std::cin.get();
 
 // Strart sending the path vector to client
 std::cout<<"Sending the data to client process.."<<std::endl;
@@ -207,7 +207,7 @@ res.path.path_heading=route.path.path_heading;
 res.path.path_velocity=route.path.path_velocity;
 res.path.path_vvelocity=route.path.path_vvelocity;
 res.path.path_bank=route.path.path_bank;
-res.path.path_climb=route.path.path_climb;
+res.path.path_climb=route.path.path_gamma;
 res.path.path_curv=route.path.path_curv;
 res.path.path_times=route.path.path_times;
 res.path.path_deriv=route.path.path_deriv; // not filled yet

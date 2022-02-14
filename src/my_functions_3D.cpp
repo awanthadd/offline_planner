@@ -52,6 +52,7 @@ if (condition == 1) {
 else {
   idx=vel_idx+ (int)(curvs.num_curv/2) +count;
 }
+ std::cout<<" IDX: "<<idx<< std::endl;
 return_poly=curvs.curv_list.at(idx);
 return return_poly;
 }
@@ -100,7 +101,7 @@ struct initial_Sf2_out_struct get_initial_sf2(const poly_struct& C1C3Sf1Sf3k_tra
   psi3= polyint(C1C3Sf1Sf3k_trans.C2, 0.0);
   double heading_change=polyval(psi1,C1C3Sf1Sf3k_trans.Sf1) + polyval(psi3,C1C3Sf1Sf3k_trans.Sf2);
 
-  st1.rem_change=head_change-abs(heading_change);
+  st1.rem_change=abs(head_change)-abs(heading_change);
     if (st1.rem_change<0){
       st1.Sf2=EPS;
     }
@@ -331,6 +332,8 @@ while ((t < 1.0) && (num_iter<max_iter) ) {
   x_end.y= x_start.y + curv_end_pt.y;
 
 // check if we are converged
+// std::cout<<"dist: "<< dis_frm_line_to_pt_2D(x_end,wpt,xlim)<< std::endl;
+// std::cin.get();
 if (dis_frm_line_to_pt_2D(x_end,wpt,xlim)<dist_tol) {
 //  std::cout<<"dist: "<< dis_frm_line_to_pt_2D(x_end,wpt,xlim)<< std::endl;
   if (dis_pt_to_pt_2D(x_end,wpt)> dis_pt_to_pt_2D(xlim,wpt) ){
@@ -353,6 +356,8 @@ else {  // Shift start point otherwise
 num_iter+=1;
 } 
 }
+
+//std::cin.get();
 return st1;
 //std::cin.get();
 }
@@ -485,159 +490,7 @@ double set_max_airspeed(const double& mas, const double& step)    {
     return max_airspeed;
   }
 
-//////////////////////
-/*
-struct turn_struct generate_climb_turn1(const route_struct& route, const int& i, const double& climb_angle, const double& heading){
-    double max_climb_ang=0.0;
-    if (((route.wpt_list.at(i+1).v*MS_TO_KNOTS)>0) && ((route.wpt_list.at(i+1).v*MS_TO_KNOTS)<30)) max_climb_ang= atan2(VV_FM_HV_K_0_30*FM_TO_MS,route.wpt_list.at(i+1).v);
-    else if (((route.wpt_list.at(i+1).v*MS_TO_KNOTS)>=30) && ((route.wpt_list.at(i+1).v*MS_TO_KNOTS)<45)) max_climb_ang= atan2(VV_FM_HV_K_30_45*FM_TO_MS,route.wpt_list.at(i+1).v);
-    else max_climb_ang= atan2(VV_FM_HV_K_45*FM_TO_MS,route.wpt_list.at(i+1).v);
-//   std::cout<<"route.wpt_list.at(i+1).v.."<<route.wpt_list.at(i+1).v<<std::endl;
-  // std::cin.get();
-  turn_struct cl_turn;
-  if(max_climb_ang>climb_angle){ //WE WILL CALCULATE THE CLIMB WITH MAX CLIMB ANGLE
-  // REPLACE THAT STRAIGHT IWTH THE CLIMB STRUCT...
-  cl_turn.isclimb=true; 
-    // RK4_struct climb_stat1; 
-    double K=route.wpt_list.at(i+1).v;  // 25.7 this is correct. If needed, this can be floor(route.wpt_list.at(i+1).v) to set K=25 as matched with the tturn vel.
-       
-     cl_turn.climb_turn.set_heading(heading);   
-     cl_turn.climb_turn.climb1.xy.push_back(0); cl_turn.climb_turn.climb1.x.push_back(0);  cl_turn.climb_turn.climb1.y.push_back(0);
-     cl_turn.climb_turn.climb1.z.push_back(0); //climb_stat.z.push_back(straight.start.z);  
-     cl_turn.climb_turn.climb1.v.push_back(K); cl_turn.climb_turn.climb1.vh.push_back(K); cl_turn.climb_turn.climb1.vv.push_back(0);
-     cl_turn.climb_turn.climb1.gamma.push_back(0); cl_turn.climb_turn.climb1.t.push_back(0);
-     // Integrate v, gamma, v horiz, v_vert.. 0.5< Nz<2 
-    double Nz=1.25; double dgamma=0.001;
-      // For ascending up turn...
-    for (int i=0; i< floor(max_climb_ang/dgamma); i++){
-    RK4_out(cl_turn.climb_turn.climb1, K, Nz,dgamma,i);
-    }    
-    //  CALCULATE THE CURVE COEFFICIENTS FOR CLIMB1..   
-    print_vec_float(cl_turn.climb_turn.climb1.vv_coeffs);
-    polyfit(cl_turn.climb_turn.climb1.t, cl_turn.climb_turn.climb1.vv, cl_turn.climb_turn.climb1.vv_coeffs, 4) ;
-    std::reverse(cl_turn.climb_turn.climb1.vv_coeffs.begin(),cl_turn.climb_turn.climb1.vv_coeffs.end());
-      // For descending up turn..
-     //  RK4_struct climb_stat2; //straight.vel_start; 
-       cl_turn.climb_turn.climb2.v.push_back(cl_turn.climb_turn.climb1.v.back()); 
-       cl_turn.climb_turn.climb2.vh.push_back(cl_turn.climb_turn.climb1.vh.back()); 
-       cl_turn.climb_turn.climb2.gamma.push_back(max_climb_ang); 
-       cl_turn.climb_turn.climb2.t.push_back(0); cl_turn.climb_turn.climb2.xy.push_back(0);  
-       cl_turn.climb_turn.climb2.x.push_back(0); cl_turn.climb_turn.climb2.y.push_back(0);
-       cl_turn.climb_turn.climb2.z.push_back(0); //climb_stat.z.push_back(straight.start.z);
-      cl_turn.climb_turn.climb2.vv.push_back(cl_turn.climb_turn.climb1.vv.back());
-
-    for (int i=floor(max_climb_ang/dgamma); i> 0; i--){  
-    RK4_out(cl_turn.climb_turn.climb2, -K, Nz,dgamma,i);    
-    }
-  polyfit(cl_turn.climb_turn.climb2.t, cl_turn.climb_turn.climb2.vv, cl_turn.climb_turn.climb2.vv_coeffs, 4) ;
-std::reverse(cl_turn.climb_turn.climb2.vv_coeffs.begin(),cl_turn.climb_turn.climb2.vv_coeffs.end());
-
-  double z_residual=(route.wpt_list.at(i+2).z-route.wpt_list.at(i+1).z)-(cl_turn.climb_turn.climb1.z.back() +cl_turn.climb_turn.climb2.z.back() ); // remaining z distance to go with linear speed..
-  if (z_residual>=0){ 
-  cl_turn.climb_turn.linear_climb.length= z_residual/sin(max_climb_ang); //length to go with velocity 'v'
-  cl_turn.climb_turn.linear_climb.v= cl_turn.climb_turn.climb1.v.back();
-  cl_turn.climb_turn.linear_climb.gamma= cl_turn.climb_turn.climb1.gamma.back();
-  cl_turn.climb_turn.linear_climb.tot_t= cl_turn.climb_turn.linear_climb.length/cl_turn.climb_turn.linear_climb.v;
-  cl_turn.climb_turn.linear_climb.vh= cl_turn.climb_turn.linear_climb.v*cos(cl_turn.climb_turn.linear_climb.gamma);
-  cl_turn.climb_turn.linear_climb.vv= cl_turn.climb_turn.linear_climb.v*sin(cl_turn.climb_turn.linear_climb.gamma);
-  cl_turn.climb_turn.linear_climb.vv_coeffs.push_back(0); // no acceleration only constant vertical speed for linear climb
-  cl_turn.climb_turn.linear_climb.vv_coeffs.push_back(cl_turn.climb_turn.linear_climb.vv);
-
-  double dt_temp=0.01;
-  for (int i=0; i< floor(cl_turn.climb_turn.linear_climb.tot_t/dt_temp); i++){
-   cl_turn.climb_turn.linear_climb.t.push_back(i*dt_temp);
-   cl_turn.climb_turn.linear_climb.xy.push_back(i*dt_temp*cl_turn.climb_turn.linear_climb.v*cos(cl_turn.climb_turn.linear_climb.gamma));
-   cl_turn.climb_turn.linear_climb.z.push_back(i*dt_temp*cl_turn.climb_turn.linear_climb.v*sin(cl_turn.climb_turn.linear_climb.gamma));
-   cl_turn.climb_turn.linear_climb.x.push_back(cl_turn.climb_turn.linear_climb.xy.back()*cos(cl_turn.climb_turn.linear_climb.heading));
-   cl_turn.climb_turn.linear_climb.y.push_back(cl_turn.climb_turn.linear_climb.xy.back()*sin(cl_turn.climb_turn.linear_climb.heading));   }
-  double straight_distance=sqrt(pow((route.wpt_list.at(i+2).x-route.wpt_list.at(i+1).x),2.0)+ pow((route.wpt_list.at(i+2).y-route.wpt_list.at(i+1).y),2.0));
-
-    if (straight_distance>(cl_turn.climb_turn.linear_climb.xy.back()+ cl_turn.climb_turn.climb2.xy.back()+ cl_turn.climb_turn.climb1.xy.back()))
-    {
-  // 1. Find the climb curve end point..
-      point_xyz clmb_curv_end_pt; clmb_curv_end_pt.x=cl_turn.climb_turn.climb1.x.back(); clmb_curv_end_pt.y=cl_turn.climb_turn.climb1.y.back(); clmb_curv_end_pt.z=cl_turn.climb_turn.climb1.z.back();
-      point_xyz clmb_start_pt;     
-      
-     clmb_start_pt.x= (route.wpt_list.at(i).x +route.wpt_list.at(i+1).x)/2;    
-     clmb_start_pt.y= (route.wpt_list.at(i).y +route.wpt_list.at(i+1).y)/2;   
-     clmb_start_pt.z= (route.wpt_list.at(i).z +route.wpt_list.at(i+1).z)/2;
-    point_xyz climb_straight_end;
-    climb_straight_end.x=(route.wpt_list.at(i+2).z-route.wpt_list.at(i+1).z)/tan(cl_turn.climb_turn.linear_climb.gamma)*cos(heading) +route.wpt_list.at(i+1).x;
-    climb_straight_end.y=(route.wpt_list.at(i+2).z-route.wpt_list.at(i+1).z)/tan(cl_turn.climb_turn.linear_climb.gamma)*sin(heading) +route.wpt_list.at(i+1).y;
-    climb_straight_end.z=route.wpt_list.at(i+2).z;
-      
-    point_xyz clmb_end_pt; clmb_end_pt.x= (route.wpt_list.at(i+1).x+ climb_straight_end.x)/2.0; 
-    clmb_end_pt.y= (route.wpt_list.at(i+1).y+ climb_straight_end.y)/2.0;
-    clmb_end_pt.z= (route.wpt_list.at(i+1).z+ climb_straight_end.z)/2.0;
-    
-    point_xyz wpt_mid; wpt_mid.x= route.wpt_list.at(i+1).x; wpt_mid.y= route.wpt_list.at(i+1).y; wpt_mid.z= route.wpt_list.at(i+1).z;
-
-         std::cout<<"clmb_curv_end_pt.x: "<< clmb_curv_end_pt.x<<std::endl;
-     std::cout<<"clmb_curv_end_pt.y: "<< clmb_curv_end_pt.y<<std::endl;
-     std::cout<<"clmb_curv_end_pt.z: "<< clmb_curv_end_pt.z<<std::endl;
-      std::cout<<"I AM AT RIGHT FUN "<<std::endl;
-    // std::cin.get();
-    climb_start_end_struct climb_start_end= find_climb_start_end(clmb_curv_end_pt, clmb_start_pt,wpt_mid,clmb_end_pt, DIST_TOL,i);
-     if (climb_start_end.matched==true){ // Only move forward when it is matched..
-       //ADD THE CALCULATED CLIMB CURVE1 START POINT X,Y,Z TO THE START OF CLIMB CURVE 1...
-    for (int i=0; i<cl_turn.climb_turn.climb1.x.size();i++) cl_turn.climb_turn.climb1.x.at(i)+=climb_start_end.x_start.x;
-    for (int i=0; i<cl_turn.climb_turn.climb1.y.size();i++) cl_turn.climb_turn.climb1.y.at(i)+=climb_start_end.x_start.y;
-    for (int i=0; i<cl_turn.climb_turn.climb1.z.size();i++) cl_turn.climb_turn.climb1.z.at(i)+=climb_start_end.x_start.z;
-      // ADD THE CLIMB CURVE ENDPOINT X,Y,Z TO THE START OF LINEAR CLIMB...
-    for (int i=0; i<cl_turn.climb_turn.linear_climb.x.size();i++) cl_turn.climb_turn.linear_climb.x.at(i)+=cl_turn.climb_turn.climb1.x.back();
-    for (int i=0; i<cl_turn.climb_turn.linear_climb.y.size();i++) cl_turn.climb_turn.linear_climb.y.at(i)+=cl_turn.climb_turn.climb1.y.back();
-    for (int i=0; i<cl_turn.climb_turn.linear_climb.z.size();i++) cl_turn.climb_turn.linear_climb.z.at(i)+=cl_turn.climb_turn.climb1.z.back();
-    for (int i=0; i<cl_turn.climb_turn.linear_climb.t.size();i++) cl_turn.climb_turn.linear_climb.t.at(i)+=cl_turn.climb_turn.climb1.t.back();
-      // NOW ADD THE LINEAR CLIMB ENDPOINT X,Y,Z TO THE START OF 2ND CLIMB CURVE..
-    for (int i=0; i<cl_turn.climb_turn.climb2.x.size();i++) cl_turn.climb_turn.climb2.x.at(i)+=cl_turn.climb_turn.linear_climb.x.back();
-    for (int i=0; i<cl_turn.climb_turn.climb2.y.size();i++) cl_turn.climb_turn.climb2.y.at(i)+=cl_turn.climb_turn.linear_climb.y.back();
-    for (int i=0; i<cl_turn.climb_turn.climb2.z.size();i++) cl_turn.climb_turn.climb2.z.at(i)+=cl_turn.climb_turn.linear_climb.z.back();
-    for (int i=0; i<cl_turn.climb_turn.climb2.t.size();i++) cl_turn.climb_turn.climb2.t.at(i)+=cl_turn.climb_turn.linear_climb.t.back();
-    cl_turn.start.x =climb_start_end.x_start.x; cl_turn.start.y =climb_start_end.x_start.y; cl_turn.start.z =climb_start_end.x_start.z;
-    cl_turn.end.x=cl_turn.climb_turn.climb2.x.back(); cl_turn.end.y=cl_turn.climb_turn.climb2.y.back(); cl_turn.end.z=cl_turn.climb_turn.climb2.z.back();
-    cl_turn.vel=cl_turn.climb_turn.climb2.v.back(); // ONLY CONSIDERED THE HORIZONTAL VELOCITY AS THE CLIMB VELOCITY IS CHANGING OVER TIME....
-      cl_turn.s_breaks.clear(); cl_turn.s_breaks.push_back(0);
-      cl_turn.s_breaks.push_back(cl_turn.climb_turn.climb1.xy.back());
-      cl_turn.s_breaks.push_back(cl_turn.s_breaks.back()+cl_turn.climb_turn.linear_climb.xy.back());
-      cl_turn.s_breaks.push_back(cl_turn.s_breaks.back()+cl_turn.climb_turn.climb2.xy.back());
-      cl_turn.t_breaks.clear(); cl_turn.t_breaks.push_back(0); 
-      cl_turn.t_breaks.push_back(cl_turn.climb_turn.climb1.t.back());
-      cl_turn.t_breaks.push_back(cl_turn.climb_turn.linear_climb.t.back());
-      cl_turn.t_breaks.push_back(cl_turn.climb_turn.climb2.t.back());     
-
-      cl_turn.empty=false; //cl_turn.Sf_total=1.0; // Just a number will be refiend later.
-      // Following is for all 3 parts.
-    std::vector <double> curv_cof1; for (int j = 0; j < CURV_COEFF_LENGTH; j++) curv_cof1.push_back(0); cl_turn.curv_coeffs.push_back(curv_cof1);
-    std::vector <double> curv_cof2; for (int j = 0; j < CURV_COEFF_LENGTH; j++) curv_cof2.push_back(0); cl_turn.curv_coeffs.push_back(curv_cof2);
-    std::vector <double> curv_cof3; for (int j = 0; j < CURV_COEFF_LENGTH; j++) curv_cof3.push_back(0); cl_turn.curv_coeffs.push_back(curv_cof3); 
-    std::vector <double> psi_cof1;  std::vector <double> psi_cof2;  std::vector <double> psi_cof3; 
-    for (int j = 0; j < PSI_COEFF_LENGTH-1; j++) psi_cof1.push_back(0); psi_cof1.push_back(heading); cl_turn.psi_coeffs.push_back(psi_cof1);
-    for (int j = 0; j < PSI_COEFF_LENGTH-1; j++) psi_cof2.push_back(0); psi_cof2.push_back(heading); cl_turn.psi_coeffs.push_back(psi_cof2);
-    for (int j = 0; j < PSI_COEFF_LENGTH-1; j++) psi_cof3.push_back(0); psi_cof3.push_back(heading); cl_turn.psi_coeffs.push_back(psi_cof3); 
-// consider horizontal velocities only... (1-acceleration,2-velocity, 3-distance)
-  std::vector <double> t_cof1; t_cof1.push_back(0); t_cof1.push_back(cl_turn.climb_turn.climb1.vh.back()); t_cof1.push_back(0); cl_turn.t_coeffs.push_back(t_cof1);  
-  std::vector <double> t_cof2; t_cof2.push_back(0); t_cof2.push_back(cl_turn.climb_turn.linear_climb.vh); t_cof2.push_back(cl_turn.climb_turn.climb1.xy.back()); cl_turn.t_coeffs.push_back(t_cof2);  
-  std::vector <double> t_cof3; t_cof3.push_back(0); t_cof3.push_back(cl_turn.climb_turn.climb2.vh.back()); t_cof3.push_back(cl_turn.climb_turn.climb1.xy.back()+cl_turn.climb_turn.linear_climb.xy.back()); cl_turn.t_coeffs.push_back(t_cof3);  
-  std::vector <double> vp; vp.push_back(0); vp.push_back(cl_turn.climb_turn.linear_climb.vh);
-  cl_turn.vel_poly=vp; // Assuming constant HORIZONTAL speed from start to end of the cl_turn. It can be changed by adding a polynomial (now accelraiton =0)
-     }
-    }
-    else {
-        std::cout<<"The horizontal length between the two waypoints is not enough for required vertical navigation "<<std::endl;   }
- }
-else{
-std::cout<<"The height between the two waypoints is not enough for max climb angle "<<std::endl; }
-  }
-  else {
-    std::cout<<"The required climb angle is higher than the max climb angle." <<std::endl; 
-     // straight.empty=true;
-  }
-return cl_turn;  
-}
-*/
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-struct turn_struct generate_climb_turn2(const route_struct& route, const int& i, const double& climb_angle, const double& heading, turn_struct& cl_turnx){
+struct turn_struct generate_climb_turn(const route_struct& route, const int& i, const double& climb_angle, const double& heading, turn_struct& cl_turnx){
     double max_climb_ang=0.0;
     if (((route.wpt_list.at(i+1).v*MS_TO_KNOTS)>0) && ((route.wpt_list.at(i+1).v*MS_TO_KNOTS)<30)) max_climb_ang= sign_fn(climb_angle)*atan2(VV_FM_HV_K_0_30*FM_TO_MS,route.wpt_list.at(i+1).v);
     else if (((route.wpt_list.at(i+1).v*MS_TO_KNOTS)>=30) && ((route.wpt_list.at(i+1).v*MS_TO_KNOTS)<45)) max_climb_ang= sign_fn(climb_angle)*atan2(VV_FM_HV_K_30_45*FM_TO_MS,route.wpt_list.at(i+1).v);
@@ -648,7 +501,7 @@ struct turn_struct generate_climb_turn2(const route_struct& route, const int& i,
 std::cout<<"route.wpt_list.at(i+1).v.."<<route.wpt_list.at(i+1).v<<std::endl;
     std::cout<<"max_climb_ang: "<<max_climb_ang<<std::endl; 
      std::cout<<"climb_angle: "<<climb_angle<<std::endl; 
-    // std::cin.get();
+   //  std::cin.get();
 
  // turn_struct cl_turn;
   //if(abs(max_climb_ang)>abs(climb_angle))
@@ -658,9 +511,6 @@ std::cout<<"route.wpt_list.at(i+1).v.."<<route.wpt_list.at(i+1).v<<std::endl;
     //WE WILL CALCULATE THE CLIMB WITH MAX CLIMB ANGLE
   // REPLACE THAT STRAIGHT IWTH THE CLIMB STRUCT...
   cl_turn.isclimb=true;  // can be climb or descent...19/06/2021
-
-
-
 
      std::cout<<"I AM HERE A... "<<std::endl; 
     // RK4_struct climb_stat1; 
@@ -709,22 +559,20 @@ std::cout<<"route.wpt_list.at(i+1).v.."<<route.wpt_list.at(i+1).v<<std::endl;
     }
    }
 
-
        //  CALCULATE THE CURVE COEFFICIENTS FOR CLIMB1..
      std::cout<<"CHECK CLIMB CUVER VERTICAL COEFFS............... "<<std::endl; 
     print_vec_float(cl_turn.climb_turn.climb1.vv_coeffs);
-    polyfit(cl_turn.climb_turn.climb1.t, cl_turn.climb_turn.climb1.vv, cl_turn.climb_turn.climb1.vv_coeffs, 4) ;
-
-
+    polyfit(cl_turn.climb_turn.climb1.t, cl_turn.climb_turn.climb1.vv, cl_turn.climb_turn.climb1.vv_coeffs, VV_COEFF_ORDER) ;    
  std::cout<<"cl_turn.climb_turn.climb1.vv_coeffs... "<<std::endl; 
 print_vec_float(cl_turn.climb_turn.climb1.vv_coeffs);
 //printf("%f + %f*x + %f*x^2 + %f*x^3+ %f*x^4 \n", cl_turn.climb_turn.climb1.vv_coeffs[0], cl_turn.climb_turn.climb1.vv_coeffs[1], cl_turn.climb_turn.climb1.vv_coeffs[2], cl_turn.climb_turn.climb1.vv_coeffs[3], cl_turn.climb_turn.climb1.vv_coeffs[4] );
-
 std::reverse(cl_turn.climb_turn.climb1.vv_coeffs.begin(),cl_turn.climb_turn.climb1.vv_coeffs.end());
    print_vec_float(cl_turn.climb_turn.climb1.vv_coeffs);
 
-std::cout<<"N_val"<< floor(max_climb_ang/dgamma)<<std::endl; 
+   polyfit(cl_turn.climb_turn.climb1.t, cl_turn.climb_turn.climb1.gamma, cl_turn.climb_turn.climb1.gamma_coeffs, GAMMA_COEFF_ORDER) ; //added on 31/01/2021
+  std::reverse(cl_turn.climb_turn.climb1.gamma_coeffs.begin(),cl_turn.climb_turn.climb1.gamma_coeffs.end());
 
+std::cout<<"N_val"<< floor(max_climb_ang/dgamma)<<std::endl; 
        
   
     std::cout<<"climb_stat1 xy end: "<<cl_turn.climb_turn.climb1.xy.back() <<std::endl; 
@@ -782,10 +630,12 @@ std::cout<<"N_val"<< floor(max_climb_ang/dgamma)<<std::endl;
     std::cout<<"cl_turn.climb_turn.climb2.vv_coeffs... "<<std::endl; 
 
 print_vec_float(cl_turn.climb_turn.climb2.vv_coeffs);
-    polyfit(cl_turn.climb_turn.climb2.t, cl_turn.climb_turn.climb2.vv, cl_turn.climb_turn.climb2.vv_coeffs, 4) ;
+    polyfit(cl_turn.climb_turn.climb2.t, cl_turn.climb_turn.climb2.vv, cl_turn.climb_turn.climb2.vv_coeffs, VV_COEFF_ORDER) ;    
 std::reverse(cl_turn.climb_turn.climb2.vv_coeffs.begin(),cl_turn.climb_turn.climb2.vv_coeffs.end());
 print_vec_float(cl_turn.climb_turn.climb2.vv_coeffs);
-//pri
+
+polyfit(cl_turn.climb_turn.climb2.t, cl_turn.climb_turn.climb2.gamma, cl_turn.climb_turn.climb2.gamma_coeffs, GAMMA_COEFF_ORDER) ; //added on 31/01/2021
+std::reverse(cl_turn.climb_turn.climb2.gamma_coeffs.begin(),cl_turn.climb_turn.climb2.gamma_coeffs.end());
 
 //std::cin.get();
 
@@ -812,6 +662,11 @@ print_vec_float(cl_turn.climb_turn.climb2.vv_coeffs);
 
   cl_turn.climb_turn.linear_climb.vv_coeffs.push_back(0); // no acceleration only constant vertical speed for linear climb
   cl_turn.climb_turn.linear_climb.vv_coeffs.push_back(cl_turn.climb_turn.linear_climb.vv);
+
+
+for (int i = 0; i < cl_turn.climb_turn.climb1.gamma_coeffs.size()-1; i++) cl_turn.climb_turn.linear_climb.gamma_coeffs.push_back(0);
+cl_turn.climb_turn.linear_climb.gamma_coeffs.push_back(cl_turn.climb_turn.linear_climb.gamma);
+
 
 std::cout<<" linear climb GAMMA.. "<<  cl_turn.climb_turn.linear_climb.gamma <<std::endl;
 std::cout<<" linear climb VH. "<<  cl_turn.climb_turn.linear_climb.vh <<std::endl;
@@ -919,13 +774,13 @@ std::cin.get();
   //  if (climb_start_end.matched==true)   std::cout<<"climb_start_end.matched==True "<<std::endl;  
    // else std::cout<<"climb_start_end.matched==False "<<std::endl; 
 
-/////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////    Just use this for simplicity, This will start the climb at the WPi  from 15/10/2021
 climb_start_end.x_start=clmb_start_pt; 
 climb_start_end.x_end.x= clmb_curv_end_pt.x+ climb_start_end.x_start.x;
 climb_start_end.x_end.y= clmb_curv_end_pt.y+ climb_start_end.x_start.y;
 climb_start_end.x_end.z= clmb_curv_end_pt.z+ climb_start_end.x_start.z;
 climb_start_end.matched=true;
-
+///////////////////////////////////////////////////////
 
     }
 //cl_turn.points.push_back(climb_start_end.x_start); cl_turn.points.push_back(climb_start_end.x_end);
@@ -1085,7 +940,7 @@ return cl_turnx;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct turn_struct generate_fly_by_turn_sub(const route_struct& route, const int& turn_i, const curv_struct& curvs,\
+struct turn_struct generate_fly_by_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs,\
  const point_xyzvdldrfo& curve_wpt1, const point_xyzvdldrfo& curve_wpt2, const point_xyzvdldrfo& curve_wpt3,\
  const double& head_change, const double& heading1, const double& heading2){  
  turn_struct turn;  turn.is2Dcurve=true;
@@ -1101,6 +956,9 @@ struct turn_struct generate_fly_by_turn_sub(const route_struct& route, const int
 
   // Iterate over speeds until we find a feasible turn...
   double max_airspeed= set_max_airspeed(curve_wpt2.v, curvs.vel_step) ; 
+ std::cout<<" max_airspeed: "<<max_airspeed<< std::endl;
+ std::cout<<" curvs.min_vel: "<<curvs.min_vel<< std::endl;
+
   point_xyz x0; point_xyz xlim;
   x0.x=curve_wpt1.x +0.5*(curve_wpt2.x-curve_wpt1.x); x0.y=curve_wpt1.y +0.5*(curve_wpt2.y-curve_wpt1.y); 
   xlim.x=curve_wpt2.x +0.5*(curve_wpt3.x-curve_wpt2.x); xlim.y=curve_wpt2.y +0.5*(curve_wpt3.y-curve_wpt2.y); 
@@ -1123,6 +981,8 @@ struct turn_struct generate_fly_by_turn_sub(const route_struct& route, const int
 
     // FIRST WE CONTINUE WITHOUT FLY OVER WAY POINTS 11/01/2021
        initial_Sf2_out_struct Sf2_rem_change= get_initial_sf2(C1C3Sf1Sf3k_trans,head_change);
+
+ std::cout<<" Sf2_rem_change.rem_change: "<<Sf2_rem_change.rem_change<< std::endl;
 
   if(Sf2_rem_change.rem_change>=0.0){
     turn.Sfs.clear();   turn.Cs.clear();    // Clear the vectors before refilling    
@@ -1178,143 +1038,94 @@ struct turn_struct generate_fly_by_turn_sub(const route_struct& route, const int
       }
   if (VALID_TURN == true) break;    
   max_airspeed -= curvs.vel_step;
-  if (max_airspeed<curvs.min_vel) turn.empty=true;
+ // if (max_airspeed<curvs.min_vel) turn.empty=true;
   }
+  if (max_airspeed<curvs.min_vel) {
+    turn.empty=true;
+    std::cout<<" max_airspeed< curvs.min_vel.. Curve is unsuccessful..Exiting... "<< std::endl; 
+     }
 
   return turn;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct turn_struct generate_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs, const bool& is_fowp){
 
-struct turn_struct generate_fly_by_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs){
-
-//  bool VALID_TURN = false; // To test the turn is valid and move  forward..
-  point_xyzvdldrfo curve_wpt1; point_xyzvdldrfo curve_wpt2; point_xyzvdldrfo curve_wpt3;
-  // PUSHING X, Y, Z, AND VELOCITY FOR EACH CURVE WAYPOINT
-  curve_wpt1=route.wpt_list[turn_i]; curve_wpt2=route.wpt_list[turn_i+1]; curve_wpt3=route.wpt_list[turn_i+2];
-
- // if ((turn_i>0) && (route.turns.at(turn_i-1).isclimb==true) ) { 
- //    std::cout<<"route.turns.at(turn_i-1).isclimb==true"<<std::endl; 
- //    curve_wpt1.x=route.turns.at(turn_i-1).end.x;
- //    curve_wpt1.y=route.turns.at(turn_i-1).end.y;
- //    curve_wpt1.z=route.turns.at(turn_i-1).end.z;
-     
- //    }
-  
-  double heading1=atan2((curve_wpt2.y-curve_wpt1.y),(curve_wpt2.x-curve_wpt1.x));
+point_xyzvdldrfo curve_wpt1; point_xyzvdldrfo curve_wpt2; point_xyzvdldrfo curve_wpt3;
+curve_wpt1=route.wpt_list[turn_i]; curve_wpt2=route.wpt_list[turn_i+1]; curve_wpt3=route.wpt_list[turn_i+2];
+double heading1=atan2((curve_wpt2.y-curve_wpt1.y),(curve_wpt2.x-curve_wpt1.x));
   double heading2=atan2((curve_wpt3.y-curve_wpt2.y),(curve_wpt3.x-curve_wpt2.x));
   heading2=(heading2 >= 0.0 ? heading2 : (2*M_PI + heading2)); // radian value, wrapTo2Pi
   heading1=(heading1 >= 0.0 ? heading1 : (2*M_PI + heading1));
   double head_change=abs(heading2-heading1); 
-
-   std::cout<<" heading1: "<< heading1<<std::endl; std::cout<<" heading2: "<< heading2<<std::endl; std::cout<<" head_change: "<< head_change<<std::endl;
-
-
+  std::cout<<" heading1: "<< heading1<<std::endl; std::cout<<" heading2: "<< heading2<<std::endl; std::cout<<" head_change: "<< head_change<<std::endl;
   head_change=(head_change > M_PI ? (2*M_PI-head_change) : head_change);
   double temp=(cos(heading1)*sin(heading2)-sin(heading1)*cos(heading2));
   head_change=sign_fn(temp)*head_change;
   double climb_ang=atan2((curve_wpt3.z-curve_wpt2.z), sqrt(pow((curve_wpt3.x-curve_wpt2.x),2.0) + pow((curve_wpt3.y-curve_wpt2.y),2.0)));
-
-  turn_struct turn;
-  turn.turn_point.x=curve_wpt2.x; turn.turn_point.y=curve_wpt2.y; turn.turn_point.z=curve_wpt2.z;
-   std::cout<<" abs(head_change) "<< abs(head_change)<<std::endl; 
-   std::cout<<" abs(climb_ang) "<< abs(climb_ang)<<std::endl;
+  std::cout<<" climb_ang: "<< climb_ang<<std::endl;
+  std::cout<<"wpt2: "<<curve_wpt2.x<<", " <<curve_wpt2.y<<", "<<curve_wpt2.z<<std::endl;
+  std::cout<<"wpt3: "<<curve_wpt3.x<<", " <<curve_wpt3.y<<", "<<curve_wpt3.z<<std::endl;
 
 
+  turn_struct turn; turn.turn_point.x=curve_wpt2.x; turn.turn_point.y=curve_wpt2.y; turn.turn_point.z=curve_wpt2.z;
 
-  if ( (abs(head_change)>HEAD_CHANGE_THRESH) &&   ( abs(climb_ang)> CLIMB_ANG_THRESH_RAD)) { // Do both in the turn...
-   // turn.is2Dcurve=true; turn.isclimb=true;
-  
-   turn= generate_fly_by_turn_sub(route, turn_i,curvs,curve_wpt1,curve_wpt2,curve_wpt3, head_change,heading1, heading2);
+if (is_fowp==false) { // if this is a fly-by wp only
+  if ( (abs(head_change)>HEAD_CHANGE_THRESH) &&   ( abs(climb_ang)> CLIMB_ANG_THRESH_RAD)) { // Do both in the fly-by turn...   
+   turn= generate_fly_by_turn(route, turn_i,curvs,curve_wpt1,curve_wpt2,curve_wpt3, head_change,heading1, heading2);
   //turn.points.push_back(turn.start); turn.points.push_back(turn.end);
-
   double new_climb_ang=atan2((curve_wpt3.z-turn.end.z), sqrt(pow((curve_wpt3.x-turn.end.x),2.0) + pow((curve_wpt3.y-turn.end.y),2.0)));
-
-
-std::cout<<" curve_wpt3.z:  "<<curve_wpt3.z<<std::endl;
-std::cout<<" turn.end.z: "<<turn.end.z<<std::endl;
-
-std::cout<<" curve_wpt3.x:  "<<curve_wpt3.x<<std::endl;
-std::cout<<" turn.end.x: "<<turn.end.x<<std::endl;
-
-
-std::cout<<" curve_wpt3.y:  "<<curve_wpt3.y<<std::endl;
-std::cout<<" turn.end.y: "<<turn.end.y<<std::endl;
-
-
-std::cout<<" new_climb_ang.AAA:  "<<new_climb_ang<<std::endl;
-
-    turn= generate_climb_turn2(route, turn_i,new_climb_ang,heading2, turn);
-  //  turn.points.clear();
-
-//turn.points.push_back(turn.start); turn.points.push_back(turn.end);
-
-  } 
-
+    turn= generate_climb_turn(route, turn_i,new_climb_ang,heading2, turn); } 
   else if ((abs(head_change)<HEAD_CHANGE_THRESH) &&   ( abs(climb_ang)> CLIMB_ANG_THRESH_RAD)){
-   // turn.isclimb=true;  is2Dcurve=false; 
-
-        if ( climb_ang> CLIMB_ANG_THRESH_RAD) { // process for climb angle..only consider + turns now.. later - ve turns
-                                    // Generate climb turn...add climb turn..
-         // turn= generate_climb_turn1(route, turn_i,climb_ang,heading2); }
-         turn= generate_climb_turn2(route, turn_i,climb_ang,heading2, turn);}
-           
-        else if ( climb_ang< -CLIMB_ANG_THRESH_RAD) { // process for climb angle..only consider - turns now.. later - ve turns
-                                                          // Generate climb turn...add climb turn..
-          turn= generate_climb_turn2(route, turn_i,climb_ang,heading2, turn);
+        if ( climb_ang> CLIMB_ANG_THRESH_RAD) { // process for climb angle..only consider + turns now.. later - ve turns      
+         turn= generate_climb_turn(route, turn_i,climb_ang,heading2, turn);}           
+        else if ( climb_ang< -CLIMB_ANG_THRESH_RAD) { // process for climb angle..only consider - turns now.. later - ve turns                                         
+          turn= generate_climb_turn(route, turn_i,climb_ang,heading2, turn);
           }
+          }
+  else if ( (abs(head_change)>HEAD_CHANGE_THRESH) &&   ( abs(climb_ang)< CLIMB_ANG_THRESH_RAD)){  // else consider head change=0 and check for vertical climb... turn.is2Dcurve=true;  turn.isclimb=false;
+    turn= generate_fly_by_turn(route, turn_i,curvs,curve_wpt1,curve_wpt2,curve_wpt3, head_change,heading1, heading2); }
 
-          //turn.points.clear();
-
-          //turn.points.push_back(turn.start); turn.points.push_back(turn.end);
-
-}
-  else if ( (abs(head_change)>HEAD_CHANGE_THRESH) &&   ( abs(climb_ang)< CLIMB_ANG_THRESH_RAD)) 
-  // else consider head change=0 and check for vertical climb... turn.is2Dcurve=true;  turn.isclimb=false;
-{     
-turn= generate_fly_by_turn_sub(route, turn_i,curvs,curve_wpt1,curve_wpt2,curve_wpt3, head_change,heading1, heading2);
-//turn.points.clear();
-//turn.points.push_back(turn.start); turn.points.push_back(turn.end);
-
-
-}
-
-else     //condition=((abs(head_change)<HEAD_CHANGE_THRESH) &&   ( abs(climb_ang)< CLIMB_ANG_THRESH_RAD))
-{ // If head change ~=0 and climb angle~=0, a turn with no head change
- turn.vel=curve_wpt2.v;
- turn.Sf_total=0.0;
- turn.is_real=false;
- turn.empty =false;
- turn.start.x=curve_wpt2.x; turn.start.y=curve_wpt2.y; turn.start.z=curve_wpt2.z;
+else  {   //condition=((abs(head_change)<HEAD_CHANGE_THRESH) &&   ( abs(climb_ang)< CLIMB_ANG_THRESH_RAD)) .. // If head change ~=0 and climb angle~=0, a turn with no head change
+ turn.vel=curve_wpt2.v;  turn.Sf_total=0.0;  turn.is_real=false;  turn.empty =false;  turn.start.x=curve_wpt2.x; turn.start.y=curve_wpt2.y; turn.start.z=curve_wpt2.z;
  turn.end=turn.start; turn.points.clear(); turn.points.push_back(turn.start); 
 }
-
-
-
-
-
-//turn.empty = (VALID_TURN == true) ? (false) : (true); //already assigned above
-
-
-
+} else { // if this is a fly-over waypoint 
+        if ( (abs(head_change)>HEAD_CHANGE_THRESH) &&   ( abs(climb_ang)> CLIMB_ANG_THRESH_RAD)) { // Do both in the fly-over turn.
+            //  generate_fly_over_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs)
+              turn=generate_fly_over_turn( route, turn_i, curvs,heading1, heading2); 
+              double new_climb_ang=atan2((curve_wpt3.z-turn.end.z), sqrt(pow((curve_wpt3.x-turn.end.x),2.0) + pow((curve_wpt3.y-turn.end.y),2.0)));
+              turn= generate_climb_turn(route, turn_i,new_climb_ang,heading2, turn);
+        }
+         else if ( (abs(head_change)>HEAD_CHANGE_THRESH) &&   ( abs(climb_ang)< CLIMB_ANG_THRESH_RAD)){
+                turn=generate_fly_over_turn( route, turn_i, curvs,heading1, heading2);  } 
+          else { }
+}
 return turn;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct turn_struct generate_fly_over_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs){
-  double fowp_ang= M_PI/4;//M_PI/6;//M_PI/4; 
+struct turn_struct generate_fly_over_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs,const double& heading1, const double& heading2){
+ double fowp_ang=M_PI/4; turn_struct fowp_turn; 
+
+
+  while (fowp_ang>0){
+
+
+  //double fowp_ang= M_PI/12; //M_PI/12;//M_PI/6;//M_PI/4; 
+  // turn_struct fowp_turn; 
   double fowp_theta= 0.0;
-  turn_struct turn1;  turn_struct turn2;  turn_struct fowp_turn; // turn to represent both turn1 and turn2 and the straight line between
-  fowp_turn.isfowp=true;
+  turn_struct turn1;  turn_struct turn2; // turn to represent both turn1 and turn2 and the straight line between
+  fowp_turn.isfowp=true; fowp_turn.is2Dcurve=true;
 
   bool VALID_TURN1 = false; bool VALID_TURN2 = false; // To test the turn is valid and move  forward..
   point_xyzvdldrfo curve_wpt1; point_xyzvdldrfo curve_wpt2; point_xyzvdldrfo curve_wpt3;
   // PUSHING X, Y, Z, AND VELOCITY FOR EACH CURVE WAYPOINT
   curve_wpt1=route.wpt_list[turn_i]; curve_wpt2=route.wpt_list[turn_i+1]; curve_wpt3=route.wpt_list[turn_i+2];
 
-  double heading1=atan2((curve_wpt2.y-curve_wpt1.y),(curve_wpt2.x-curve_wpt1.x));
-  double heading2=atan2((curve_wpt3.y-curve_wpt2.y),(curve_wpt3.x-curve_wpt2.x));
-  heading2=(heading2 >= 0.0 ? heading2 : (2*M_PI + heading2)); // radian value, wrapTo2Pi
-  heading1=(heading1 >= 0.0 ? heading1 : (2*M_PI + heading1));
+  //double heading1=atan2((curve_wpt2.y-curve_wpt1.y),(curve_wpt2.x-curve_wpt1.x));
+  //double heading2=atan2((curve_wpt3.y-curve_wpt2.y),(curve_wpt3.x-curve_wpt2.x));
+  //heading2=(heading2 >= 0.0 ? heading2 : (2*M_PI + heading2)); // radian value, wrapTo2Pi
+  //heading1=(heading1 >= 0.0 ? heading1 : (2*M_PI + heading1));
 
   double head_change=abs(heading2-heading1); 
   head_change=(head_change > M_PI ? (2*M_PI-head_change) : head_change);
@@ -1332,8 +1143,8 @@ struct turn_struct generate_fly_over_turn(const route_struct& route, const int& 
     // DO NOTHING//
   }  
 //////////////////////////Check corridor for for turn1 only!.. 
-  std::vector <point_xyz> tunnel1=generate_corridor(curve_wpt1,curve_wpt2);  // holds 4 points for tunnel
-  std::vector <point_xyz> tunnel2=generate_corridor(curve_wpt2,curve_wpt3);
+  //std::vector <point_xyz> tunnel1=generate_corridor(curve_wpt1,curve_wpt2);  // holds 4 points for tunnel
+  //std::vector <point_xyz> tunnel2=generate_corridor(curve_wpt2,curve_wpt3);
   // Iterate over speeds until we find a feasible turn
 
   double max_airspeed= set_max_airspeed(curve_wpt2.v, curvs.vel_step) ; 
@@ -1343,6 +1154,13 @@ struct turn_struct generate_fly_over_turn(const route_struct& route, const int& 
     
   while (max_airspeed>=curvs.min_vel)
   {
+
+turn1={}; turn2={};fowp_turn={};
+fowp_turn.isfowp=true; fowp_turn.is2Dcurve=true;
+
+std::cout<<" fowp_turn.is2Dcurve: "<<fowp_turn.is2Dcurve<< std::endl;  
+
+
     std::cout<<" Max_airspeed: "<<max_airspeed<< std::endl;    
   // model struct is already updated with the curve speed...
     int count1=0; // As the  poly_struct poly strarts from 0 instead of 1 as in the curve_poly.txt
@@ -1384,7 +1202,7 @@ struct turn_struct generate_fly_over_turn(const route_struct& route, const int& 
 
     //////////////////////////////////////////////////////////////// TUNNEL CHECK FOR FOWP (FOR ONLY TURN 1 SECTION)
     get_path_from_turn(turn1, 0.0, 100); // inputs: turn struct, wind, number of samples
-    if(tunnel_check(turn1.path.path_xyz, tunnel1, tunnel2)){
+   // if(tunnel_check(turn1.path.path_xyz, tunnel1, tunnel2)){
       double MAX_ACCEL=return_max_long_accel(turn1.end.z, max_airspeed);
       turn1.vel= max_airspeed; // Assuming a constant velocity throughout the turn.(= current max_airspeed) 
       turn1.curve_max=GRAVITY*tan(max_roll)/(max_airspeed*max_airspeed);
@@ -1393,18 +1211,22 @@ struct turn_struct generate_fly_over_turn(const route_struct& route, const int& 
       turn1.empty =false;
       VALID_TURN1 = true;
       std::cout<<" A valid turn 1 is found for fly-over curve: "<<turn_i<< std::endl;
-      break;}
-    else {
-     VALID_TURN1=false;
-     std::cout<<" A valid turn 1 is NOT found for fly-over curve: "<<turn_i<< std::endl;
-     }  
+      break;
+     //}
+    //else {
+     //VALID_TURN1=false;
+     //std::cout<<" A valid turn 1 is NOT found for fly-over curve: "<<turn_i<< std::endl;
+     //}  
   
-  count1++;
+ // count1++;
+ /////////////////2022/01/28 comments
       }
-  if (VALID_TURN1 == true) break;    
-  max_airspeed -= curvs.vel_step;
-  }
+ // if (VALID_TURN1 == true) break;    
+ // max_airspeed -= curvs.vel_step;
+  //}
   if (VALID_TURN1 == false) return fowp_turn;
+//////////////////////////////2022/01/28
+
 
   // First add turn 1 coefficients to fowp turn, still need to add straight line and turn 2 parameters...
 fowp_turn.t_breaks=turn1.t_breaks; fowp_turn.s_breaks=turn1.s_breaks; fowp_turn.t_coeffs=turn1.t_coeffs;  
@@ -1429,11 +1251,14 @@ fowp_turn.curv_coeffs=turn1.curv_coeffs; fowp_turn.psi_coeffs=turn1.psi_coeffs; 
     bool flag2=false;
     while (count2<static_cast<int>(curvs.num_curv/2)) // 5 of them are - curvatures and 5 of them are + curvatures
     {
+      // std::cin.get();
        std::cout<<" Curve count number for count 2: "<<count2<< std::endl;
       flag2=false;  
 
       poly_struct C1C3Sf1Sf3k_trans2=lookup_curve_splines(((head_change>0)? 0:1),count2, turn2.vel,curvs); // change the direction of second curve
       initial_Sf2_out_struct Sf2_rem_change2= get_initial_sf2(C1C3Sf1Sf3k_trans2,nhead_change);
+
+       std::cout<<" Sf2_rem_change2.rem_change of FOWP turn: "<<Sf2_rem_change2.rem_change<< std::endl;
 
       if(Sf2_rem_change2.rem_change>=0.0){         
         turn2.Sfs.clear(); turn2.Cs.clear(); // Clear the vector before refilling.
@@ -1449,18 +1274,35 @@ fowp_turn.curv_coeffs=turn1.curv_coeffs; fowp_turn.psi_coeffs=turn1.psi_coeffs; 
         turn2.empty=false;
         flag2=true;
        }
-      if (flag2 == false) continue;  
+
+       std::cout<<" FLAG2 "<<flag2<< std::endl;
+      if (flag2 == false) {count2++; continue;} 
 
       point_xyz x_end_fowp=get_turn_end_point(turn2, WIND_SPEED);  // Get the endpoint of the second turn of fowp
+
+     std::cout<<"  x_end_fowp "<< x_end_fowp.x<<","<< x_end_fowp.y<<","<< x_end_fowp.z<< std::endl;
+
       point_xyz new_x0; new_x0.x=  (turn1.end.x+xy_intersect.x)/2; new_x0.y=  (turn1.end.y+xy_intersect.y)/2;
-      point_xyz new_xlim; new_xlim.x=(curve_wpt3.x+xy_intersect.x)/2; new_xlim.y=(curve_wpt3.y+xy_intersect.y)/2;       
+       std::cout<<"  new_x0 "<< new_x0.x<<","<< new_x0.y<<","<< new_x0.z<< std::endl;
+
+      point_xyz new_xlim; new_xlim.x=(curve_wpt3.x+xy_intersect.x)/2; new_xlim.y=(curve_wpt3.y+xy_intersect.y)/2;   
+        std::cout<<"  new_xlim "<< new_xlim.x<<","<< new_xlim.y<<","<< new_xlim.z<< std::endl;
+
       find_curv_poly_fit_out_struct poly_fit_out2 =find_curv_poly_fit(x_end_fowp, new_x0,xy_intersect,new_xlim,DIST_TOL);
+
+       std::cout<<" poly_fit_out2.matched "<<poly_fit_out2.matched<< std::endl;
+
+      
 
       if (poly_fit_out2.matched==true){ //   
          turn2.start= poly_fit_out2.x_init; turn2.end= poly_fit_out2.x_end;    
+        // Assume turn2.start.z=turn2.end.z=turn1.end.z, as this is only a 2D fowp curve... 29/01/2022
+        turn2.start.z=turn1.end.z; turn2.end.z=turn1.end.z;
+
         setup_piecewice_poly_in_turn(turn2);
         double distance_traveled=turn1.Sf_total;
         double dist_t2_end_t1_start= dis_pt_to_pt_2D(turn2.start, turn1.end); //(turn2.start-turn1.end) distance  has to follow as a straight line
+       std::cout<<" dist_t2_end_t1_start"<<dist_t2_end_t1_start<< std::endl;
         double prev_psi= polyval(turn1.psi_coeffs.back(),turn1.Sfs.back());
    
           if(dist_t2_end_t1_start>DIST_TOL){ // Add straight line coeffs to fowp turn
@@ -1471,6 +1313,8 @@ fowp_turn.curv_coeffs=turn1.curv_coeffs; fowp_turn.psi_coeffs=turn1.psi_coeffs; 
             distance_traveled+=dist_t2_end_t1_start;
             std::vector <double> c_c;for (int i = 0; i < CURV_COEFF_LENGTH; i++) c_c.push_back(0);fowp_turn.curv_coeffs.push_back(c_c);
             std::vector <double> p_c; for (int j = 0; j < PSI_COEFF_LENGTH-1; j++) p_c.push_back(0); p_c.push_back(prev_psi); fowp_turn.psi_coeffs.push_back(p_c);
+             std::cout<<" I AM HERE... "<< std::endl;
+        
         }
       // Now add turn 2 coeffients to fowp turn...
             for (int k = 1; k < turn2.s_breaks.size(); k++) fowp_turn.s_breaks.push_back(fowp_turn.s_breaks.back()+turn2.s_breaks.at(k)-turn2.s_breaks.at(k-1));
@@ -1488,17 +1332,25 @@ fowp_turn.curv_coeffs=turn1.curv_coeffs; fowp_turn.psi_coeffs=turn1.psi_coeffs; 
             //Add other parameters to fowp_turn...
             fowp_turn.start=turn1.start; fowp_turn.end=turn2.end; fowp_turn.vel=turn2.vel;
             fowp_turn.Sf_total= turn1.Sf_total+dist_t2_end_t1_start+ turn2.Sf_total;  fowp_turn.vel_poly=turn2.vel_poly;  
-            flag2 = true; fowp_turn.empty=false; 
+            flag2 = true; fowp_turn.empty=false; VALID_TURN2=true; fowp_turn.points.push_back(turn1.start); fowp_turn.points.push_back(turn1.end);
+            fowp_turn.points.push_back(turn2.start); fowp_turn.points.push_back(turn2.end);
             std::cout<<" A valid turn 2 is found for the fly-over curve.. "<< std::endl;
             break;
    }   
     count2++;
+  
     }
-    if (flag2 == false) {
-      std::cout<<"A valid turn 2 is NOT found for the fly-over curve.. "<< std::endl;
-      fowp_turn.empty=true;
-    } 
-return fowp_turn;
+    
+      if (VALID_TURN2 == true) break;    
+     max_airspeed -= curvs.vel_step;
+      if (max_airspeed<curvs.min_vel) fowp_turn.empty=true;
+  }
+
+
+ if (VALID_TURN2 == true) break;    
+fowp_ang -= M_PI/12;
+}
+return fowp_turn;;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct straight_struct generate_straight_line(route_struct& route, const int& straight_i, const bool& use_max_accel)
@@ -1558,9 +1410,10 @@ straight.climb_angle=atan2((straight.end.z-straight.start.z), straight.distance)
             std::vector <double> tcof;
             tcof.push_back(0.5*straight.accel); tcof.push_back(straight.vel_start); tcof.push_back(0);  
             straight.t_coeffs.push_back(tcof);
-            std::vector <double> vcof; std::vector <double> vvcof; // NO VERTICAL MOVEMENTS
-            vcof.push_back(straight.accel); vcof.push_back(straight.vel_start); vvcof.push_back(0); vvcof.push_back(0);
-            straight.vel_coeffs.push_back(vcof);  straight.vvel_coeffs.push_back(vvcof);
+            std::vector <double> vcof; std::vector <double> vvcof; std::vector <double> gcof; // NO VERTICAL MOVEMENTS
+            vcof.push_back(straight.accel); vcof.push_back(straight.vel_start); 
+            vvcof.push_back(0); vvcof.push_back(0);  gcof.push_back(0); gcof.push_back(0); 
+            straight.vel_coeffs.push_back(vcof);  straight.vvel_coeffs.push_back(vvcof); straight.gamma_coeffs.push_back(gcof);
             straight.s_breaks.push_back(0); straight.s_breaks.push_back(s1); 
         }
         else if (s2>DIST_TOL)
@@ -1576,12 +1429,12 @@ straight.climb_angle=atan2((straight.end.z-straight.start.z), straight.distance)
           tcof2.push_back(0); tcof2.push_back(straight.vel_end); tcof2.push_back(s1);  
           straight.t_coeffs.push_back(tcof2);
 
-          std::vector <double> vcof1; std::vector <double> vvcof1;
-          vcof1.push_back(straight.accel); vcof1.push_back(straight.vel_start); vvcof1.push_back(0); vvcof1.push_back(0);
-          straight.vel_coeffs.push_back(vcof1); straight.vvel_coeffs.push_back(vvcof1);
-          std::vector <double> vcof2;   std::vector <double> vvcof2;
-          vcof2.push_back(0); vcof2.push_back(straight.vel_end);    vvcof2.push_back(0); vvcof2.push_back(0);
-          straight.vel_coeffs.push_back(vcof2);  straight.vvel_coeffs.push_back(vvcof2);
+          std::vector <double> vcof1; std::vector <double> vvcof1; std::vector <double> gcof1;
+          vcof1.push_back(straight.accel); vcof1.push_back(straight.vel_start); vvcof1.push_back(0); vvcof1.push_back(0); gcof1.push_back(0); gcof1.push_back(0);
+          straight.vel_coeffs.push_back(vcof1); straight.vvel_coeffs.push_back(vvcof1); straight.gamma_coeffs.push_back(gcof1);
+          std::vector <double> vcof2;   std::vector <double> vvcof2; std::vector <double> gcof2;
+          vcof2.push_back(0); vcof2.push_back(straight.vel_end);    vvcof2.push_back(0); vvcof2.push_back(0); gcof2.push_back(0); gcof2.push_back(0);
+          straight.vel_coeffs.push_back(vcof2);  straight.vvel_coeffs.push_back(vvcof2); straight.gamma_coeffs.push_back(gcof2);
 
           straight.s_breaks.push_back(0); straight.s_breaks.push_back(s1); straight.s_breaks.push_back(s1+s2); 
         }
@@ -1601,9 +1454,9 @@ straight.climb_angle=atan2((straight.end.z-straight.start.z), straight.distance)
         std::vector <double> tcof;
         tcof.push_back(0.5*straight.accel); tcof.push_back(straight.vel_start); tcof.push_back(0);  
         straight.t_coeffs.push_back(tcof);
-        std::vector <double> vcof;    std::vector <double> vvcof;
-        vcof.push_back(straight.accel); vcof.push_back(straight.vel_start);  vvcof.push_back(0); vvcof.push_back(0);
-        straight.vel_coeffs.push_back(vcof);   straight.vvel_coeffs.push_back(vvcof);
+        std::vector <double> vcof;    std::vector <double> vvcof; std::vector <double> gcof;
+        vcof.push_back(straight.accel); vcof.push_back(straight.vel_start);  vvcof.push_back(0); vvcof.push_back(0); gcof.push_back(0); gcof.push_back(0);
+        straight.vel_coeffs.push_back(vcof);   straight.vvel_coeffs.push_back(vvcof); straight.gamma_coeffs.push_back(gcof);
         straight.s_breaks.push_back(0); straight.s_breaks.push_back(straight.distance); 
         
       }
@@ -1615,9 +1468,9 @@ straight.climb_angle=atan2((straight.end.z-straight.start.z), straight.distance)
         std::vector <double> tcof;
         tcof.push_back(0); tcof.push_back(straight.vel_end); tcof.push_back(0);  
         straight.t_coeffs.push_back(tcof);
-        std::vector <double> vcof;  std::vector <double> vvcof;
-        vcof.push_back(0); vcof.push_back(straight.vel_end);   vvcof.push_back(0); vvcof.push_back(0);
-        straight.vel_coeffs.push_back(vcof);  straight.vvel_coeffs.push_back(vvcof);
+        std::vector <double> vcof;  std::vector <double> vvcof; std::vector <double> gcof;
+        vcof.push_back(0); vcof.push_back(straight.vel_end);   vvcof.push_back(0); vvcof.push_back(0); gcof.push_back(0); gcof.push_back(0);
+        straight.vel_coeffs.push_back(vcof);  straight.vvel_coeffs.push_back(vvcof);  straight.gamma_coeffs.push_back(gcof);
         straight.s_breaks.push_back(0); straight.s_breaks.push_back(straight.distance);
     }  
   }
@@ -1655,6 +1508,8 @@ void calculate_route_coefficients(route_struct& route){
     for (int j = 0; j < route.straights.at(i).vel_coeffs.size(); j++) route.vel_coeffs.push_back(route.straights.at(i).vel_coeffs.at(j));
 
       for (int j = 0; j < route.straights.at(i).vvel_coeffs.size(); j++) route.vvel_coeffs.push_back(route.straights.at(i).vvel_coeffs.at(j));
+    for (int j = 0; j < route.straights.at(i).gamma_coeffs.size(); j++) route.gamma_coeffs.push_back(route.straights.at(i).gamma_coeffs.at(j)); //01/02/2022  
+
     // adding the previous s for the straight begins (t_coeffs ends)
     for (int k = 0; k < route.straights.at(i).t_coeffs.size(); k++){
       route.straights.at(i).t_coeffs.at(k).back()+=prev_s;
@@ -1693,20 +1548,33 @@ void calculate_route_coefficients(route_struct& route){
 
      if  ((route.turns.at(i).is2Dcurve==true) && (route.turns.at(i).isclimb==true)  ){ //1st 2D curve then climb
          std::vector <double> vcof; vcof.push_back(0); vcof.push_back(0);
+         std::vector <double> gcof; gcof.push_back(0); gcof.push_back(0); // 31/01/2022
         for (int j = 0; j < route.turns.at(i).curv_coeffs.size()-3; j++)  route.vvel_coeffs.push_back(vcof);
+        for (int j = 0; j < route.turns.at(i).curv_coeffs.size()-3; j++)  route.gamma_coeffs.push_back(gcof);
         route.vvel_coeffs.push_back(route.turns.at(i).climb_turn.climb1.vv_coeffs);
         route.vvel_coeffs.push_back(route.turns.at(i).climb_turn.linear_climb.vv_coeffs);
         route.vvel_coeffs.push_back(route.turns.at(i).climb_turn.climb2.vv_coeffs);
+
+        route.gamma_coeffs.push_back(route.turns.at(i).climb_turn.climb1.gamma_coeffs);
+        route.gamma_coeffs.push_back(route.turns.at(i).climb_turn.linear_climb.gamma_coeffs);
+        route.gamma_coeffs.push_back(route.turns.at(i).climb_turn.climb2.gamma_coeffs);
+
      } else if  ((route.turns.at(i).is2Dcurve==false) && (route.turns.at(i).isclimb==true)  )
      {
         route.vvel_coeffs.push_back(route.turns.at(i).climb_turn.climb1.vv_coeffs);
         route.vvel_coeffs.push_back(route.turns.at(i).climb_turn.linear_climb.vv_coeffs);
         route.vvel_coeffs.push_back(route.turns.at(i).climb_turn.climb2.vv_coeffs);
+
+        route.gamma_coeffs.push_back(route.turns.at(i).climb_turn.climb1.gamma_coeffs);
+        route.gamma_coeffs.push_back(route.turns.at(i).climb_turn.linear_climb.gamma_coeffs);
+        route.gamma_coeffs.push_back(route.turns.at(i).climb_turn.climb2.gamma_coeffs);
      }
       else if  ((route.turns.at(i).is2Dcurve==true) && (route.turns.at(i).isclimb==false)  )     
      {
           std::vector <double> vcof; vcof.push_back(0); vcof.push_back(0);
+          std::vector <double> gcof; gcof.push_back(0); gcof.push_back(0);
           for (int j = 0; j < route.turns.at(i).curv_coeffs.size(); j++)  route.vvel_coeffs.push_back(vcof); 
+          for (int j = 0; j < route.turns.at(i).curv_coeffs.size(); j++)  route.gamma_coeffs.push_back(gcof); 
             }
             else { }
 
@@ -1763,42 +1631,41 @@ print_vec_vec_float(route.psi_coeffs);
 std::cout<<" ROUTE CURVE COEFFS  "<< std::endl;
 print_vec_vec_float(route.curv_coeffs);
 std::cout<<" tot_t_samples:  "<<tot_t_samples<< std::endl;
-//std::cin.get();
+std::cin.get();
 
 for (int i=0; i<tot_t_samples; i++){
+
+
+
   double ith_t_sample=TIME_STEP*i; //double x_integral=0.0; double y_integral=0.0;
   route.path.path_times.push_back(ith_t_sample);
+
+ // std::cout<<i<<" "<<" ith_t_sample:  "<<ith_t_sample<< std::endl;
   double ith_s_sample= ppval(route.t_coeffs,route.t_breaks,ith_t_sample);
- // std::cout<<i<<" "<<" ith_s_sample:  "<<ith_s_sample<< std::endl;
+//  std::cout<<i<<" "<<" ith_s_sample:  "<<ith_s_sample<< std::endl;
   double ith_heading=ppval(route.psi_coeffs,route.s_breaks,ith_s_sample);
   //std::cout<<i<<" "<<" ith_heading:  "<<ith_heading<< std::endl;
   ith_heading= (ith_heading<0)? (ith_heading+=2*M_PI):ith_heading; 
   ith_heading= (ith_heading>=2*M_PI)? (ith_heading-=2*M_PI):ith_heading; 
-
-
-
   route.path.path_heading.push_back((ith_heading)*(180.0/M_PI));
-
-
 //std::cout<<i<<" "<<" ppval(route.vel_coeffs,route.t_breaks,ith_t_sample):  "<<ppval(route.vel_coeffs,route.t_breaks,ith_t_sample)<< std::endl;
   route.path.path_velocity.push_back(ppval(route.vel_coeffs,route.t_breaks,ith_t_sample));
-    
    //route.path.path_vvelocity.push_back(0);
-  // std::cout<<i<<" "<<" route.vvel_coeffs,route.t_breaks,ith_t_sample:  "<<ppval(route.vvel_coeffs,route.t_breaks,ith_t_sample)<< std::endl;
-
+  //std::cout<<i<<" "<<" route.vvel_coeffs,route.t_breaks,ith_t_sample:  "<<ppval(route.vvel_coeffs,route.t_breaks,ith_t_sample)<< std::endl;
   route.path.path_vvelocity.push_back(ppval(route.vvel_coeffs,route.t_breaks,ith_t_sample)); // added 14/06/2021
+   route.path.path_gamma.push_back(ppval(route.gamma_coeffs,route.t_breaks,ith_t_sample));
 //std::cout<<" VVOL_back:  "<< route.path.path_vvelocity.back()<< std::endl;   
-
 
   route.path.path_curv.push_back(ppval(route.curv_coeffs,route.s_breaks,ith_s_sample));
   route.path.path_xyz.push_back(pt_p);
+ 
   pt_p.x +=   (double)TIME_STEP*route.path.path_velocity.back()*cos( ith_heading) ;  //+route.wpt_list.at(0).x; + x_direction of wind_speed* time(s);
   pt_p.y +=   (double)TIME_STEP*route.path.path_velocity.back()*sin(ith_heading) ; //+route.wpt_list.at(0).y; //+ y_direction of wind_speed* time(s);
   pt_p.z +=   (double)TIME_STEP*route.path.path_vvelocity.back() ;
   route.path.path_xyz.push_back(pt_p);
   route.path.path_bank.push_back( (180.0/M_PI)*atan2(((pow(route.path.path_velocity.back(),2.0))*route.path.path_curv.back()),GRAVITY));
-
-  route.path.path_climb.push_back(0);
+  //route.path.path_climb.push_back(0);
+ //  route.path.path_climb.push_back(0);
 }
 
 
@@ -1904,7 +1771,8 @@ std::vector <point_LatLonAltVelFo> Generate_plan_WPs_LatLonAlt(const mission_str
     if(mission_in.items.at(i).AltitudeMode == 2) pt.Alt= mission_in.items.at(i).params.at(6); // abs Altitude 
     else if(mission_in.items.at(i).AltitudeMode == 1) pt.Alt= mission_in.items.at(i).params.at(6)+mission_in.plannedHomePosition.Alt; // relative Altitude  
     else { }
-    // if (mission_in.items.at(i).params.at(x) =AAA) pt.Fo=true  /// indecate how to calculate fly over way points
+   if(mission_in.items.at(i).params.at(0)==1.0) pt.fowp=true; // CHEKING IF A FLY-OVER WP. DEFAULT IS FLY-BY. 2022/01/27
+    
     pt.Lat= mission_in.items.at(i).params.at(4);
     pt.Lon= mission_in.items.at(i).params.at(5);  
 
@@ -1912,8 +1780,11 @@ std::vector <point_LatLonAltVelFo> Generate_plan_WPs_LatLonAlt(const mission_str
       if(mission_in.items.at(i+1).command == 178) pt.Vel=mission_in.items.at(i+1).params.at(1);
       else pt.Vel=planWPs.back().Vel;
   }
-    planWPs.push_back(pt);
-    }
+  std::cout<<"The pt.Vel: "<<pt.Vel<< "i val: "<<i <<std::endl; 
+    if (pt.Vel>=min_airspeed  || (mission_in.items.at(i).command == 21) || (mission_in.items.at(i).command == 22)   ){
+    planWPs.push_back(pt);  //07/02/2022 only add coordinate turns ... no taxing
+      std::cout<<"The pt.Vel new: "<<pt.Vel <<std::endl;   }
+  }
   }
   return planWPs;
 }
@@ -2399,6 +2270,9 @@ mission_struct Generate_mission_from_LatLonAlt(const std::vector <point_LatLonAl
   } else {
        std::cout<<"ERROR IN MISSION iTEM INITIALS... "<<std::endl; 
   }
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
 
  // updated_mission.items.resize(1); // Remove all except 1st entry of items : NAVCMD:TAKEOFF
 

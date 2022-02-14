@@ -82,17 +82,20 @@ bool tunnel_check(const std::vector <point_xyz>& turn_xyz, const std::vector <po
 
 double set_max_airspeed(const double& mas, const double& step);
 
-struct turn_struct generate_fly_by_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs);
+struct turn_struct generate_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs, const bool& is_fowp);
 
-struct turn_struct generate_fly_by_turn_sub(const route_struct& route, const int& turn_i, const curv_struct& curvs,\
+
+//struct turn_struct generate_fly_by_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs);
+
+struct turn_struct generate_fly_by_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs,\
  const point_xyzvdldrfo& curve_wpt1, const point_xyzvdldrfo& curve_wpt2, const point_xyzvdldrfo& curve_wpt3,\
  const double& head_change, const double& heading1, const double& heading2);
 
-struct turn_struct generate_climb_turn1(const route_struct& route, const int& i, const double& climb_angle, const double& heading);
-struct turn_struct generate_climb_turn2(const route_struct& route, const int& i, const double& climb_angle, const double& heading, turn_struct& cl_turn);
+//struct turn_struct generate_climb_turn1(const route_struct& route, const int& i, const double& climb_angle, const double& heading);
+struct turn_struct generate_climb_turn(const route_struct& route, const int& i, const double& climb_angle, const double& heading, turn_struct& cl_turn);
 
 
-struct turn_struct generate_fly_over_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs);
+struct turn_struct generate_fly_over_turn(const route_struct& route, const int& turn_i, const curv_struct& curvs,const double& heading1, const double& heading2);
 
 struct straight_struct generate_straight_line(route_struct& route, const int& straight_i, const bool& use_max_accel);
 

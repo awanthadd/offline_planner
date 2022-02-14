@@ -23,7 +23,9 @@ const double EARTH_RADIUS = 6378100.00000;
 // SOME CONSTANTS ARE READ THROUGH THE CURVES STRUCT FILLED BY THE CURVE_POLY_TXT
 
 const double EPS= 1e-9 ;
-const double WIND_SPEED= 0.0;
+const double WIND_SPEED= 5.0;  // in m/s...14/02/2022 for adding wind
+const double WIND_DIR_FRM_E= M_PI/6;        //IN RADS, FROM EAST..... 14/02/2022 for adding wind
+
 const double DIST_TOL= 1.0;//1e-3;// 1.0
 //const double DIST_TOL_FOR_STRAIGHT_LINE= 0.001; // FOR DIFFERENCE IN STAIGHT LINE END TO CURVE START
 
@@ -41,7 +43,8 @@ const double max_vel_z=1000*0.00508; // same as defined in KiTe algorithm
 ////////////*********************////////////////////
 
 
-
+const int VV_COEFF_ORDER =4;
+const int GAMMA_COEFF_ORDER =4;
 const int CURV_POLY_DEG =4;
 const int CURV_COEFF_LENGTH= CURV_POLY_DEG+1;
 const int PSI_COEFF_LENGTH= CURV_COEFF_LENGTH+1;
@@ -49,7 +52,7 @@ const int NUM_CURVS_FOR_TURN= 3;
 const int NUM_BREAKS_FOR_TURN= NUM_CURVS_FOR_TURN+1;
 const int TURN_VEL_COEFF_LENGTH=2; // for now keep constant speed for entire turn for the simplecity and accelration is zero
 
-const double HEAD_CHANGE_THRESH=0.05; //0.018 (rad)=1.031 deg.// in rad (~3.00 deg) if the waypoints has a different more than this threshold it will calculate a fly-by turn
+const double HEAD_CHANGE_THRESH=0.05;//SHOULD BE CHANGED TO: 0.05; //0.018 (rad)=1.031 deg.// in rad (~3.00 deg) if the waypoints has a different more than this threshold it will calculate a fly-by turn
 const int SPEED_POLY_DEG =4;
 const int ACCEL_POLY_DEG= 3 ;
 const int NUM_SAMPLES =100;
@@ -61,17 +64,17 @@ const double TIME_STEP =0.1;//1.0
 const double WPT_DIFF_THRESH=10.0;// difference in waypoints to calculate in m
 
 // Default corridor distances for 2D path
-const double DIST_L=40.0; // 50 // 300 in meters
-const double DIST_R=40.0;
+const double DIST_L=50.0; // 50 // 300 in meters
+const double DIST_R=50.0;
 
 const double DIST_U=50.0; // in meters up and bottom distances
 const double DIST_B=50.0;
 
 const int NUM_SIDES_FOR_CORRIDOR_DISP=2; // NUMBER OF SIDES FOR DISPLAYING CORRIDOR IN CLIENT PROGRAM
 //const double CLIMB_ANG_THRESH_RAD=0.017; // (1 deg) KEEPING A THRESHOLD FOR CLIMB ANGLE CALCULATION
-const double VV_FM_HV_K_0_30 =300;//200; //VERTICAL VELOCITY LIMIT (IN FEETS PER min) FOR HORIZONTAL VELOCITY (KNOTS) 0-30 =+- 200
-const double VV_FM_HV_K_30_45 =800;//500; //VERTICAL VELOCITY LIMIT (IN FEETS PER min) FOR HORIZONTAL VELOCITY (KNOTS) 0-30 =+- 500
-const double VV_FM_HV_K_45 =1500; //VERTICAL VELOCITY LIMIT (IN FEETS PER min) FOR HORIZONTAL VELOCITY (KNOTS) 0-30 =+- 1500
+const double VV_FM_HV_K_0_30 =300;//300;//200; //VERTICAL VELOCITY LIMIT (IN FEETS PER min) FOR HORIZONTAL VELOCITY (KNOTS) 0-30 =+- 200
+const double VV_FM_HV_K_30_45 =800;//800;//500; //VERTICAL VELOCITY LIMIT (IN FEETS PER min) FOR HORIZONTAL VELOCITY (KNOTS) 30-45 =+- 500
+const double VV_FM_HV_K_45 =1500; //VERTICAL VELOCITY LIMIT (IN FEETS PER min) FOR HORIZONTAL VELOCITY (KNOTS) 45+ =+- 1500
 
 const double LA_KS_HAG_F_0_40_LV_K_0_45 =6; //2 //LONGITUDINAL ACCELERATION MAX IN k/S FOR HEIGHT ABOVE GROUND (<40 feet) AND LONG. VELOCITY (0-45 KNOTS)
 const double LA_KS_HAG_F_40_I_LV_K_0_45 =10; //3 //LONGITUDINAL ACCELERATION MAX IN k/S FOR HEIGHT ABOVE GROUND (>40 feet) AND LONG. VELOCITY (0-45 KNOTS)

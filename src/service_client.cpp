@@ -108,7 +108,15 @@ int main(int argc, char **argv)
 {
 ///////////////////////////////////////////////////////////////
 //std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/Ottawa_Mission.plan");
-std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/MSNOL6-2.plan");
+//std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/MSNOL6-2.plan");
+//std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/MsnOL3-10.plan");
+//std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/MSNOL6-2_FO_FB.plan"); // FILE WITH A FO WP. 27/01/2022
+//std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/2022/22-XX-XX-EY_CTR_Demo_Mission-Coarse_v1.plan"); // A NEW FILE . 05/02/2022
+std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/2022/Coarse5.plan"); // A NEW FILE . 05/02/2022
+//std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/2022/Tst1.plan"); // A NEW FILE . 05/02/2022
+
+
+
 //std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/MsnOL7-2.plan");
 //std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/MSNOL6-2tst.plan");
 //std::ifstream ifs("/home/awantha/catkin_ws2/src/offline_planner/plan_files/MSNOL6-2_mod.plan");
@@ -186,7 +194,8 @@ for (int i=0; i < XYZ_wps_old.size();i++){
   ros::Publisher pub_vv = nh.advertise< std_msgs::Float64>("/vvelocity",1000);
   ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>( "/visualization_marker", 10 );
   ros::Publisher markerArray_pub = nh.advertise<visualization_msgs::MarkerArray>("/MarkerArray", 10);
-  ros::Rate loop_rate(100);
+  //ros::Rate loop_rate(100);
+  ros::Rate loop_rate(10);
 
   ros::ServiceClient mission_client = nh.serviceClient<offline_planner::Mission_Service>("mission_service"); // create the client (mission_client)
   offline_planner::Mission_Service srv;
